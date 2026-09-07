@@ -107,18 +107,46 @@ public class DataSeeder implements CommandLineRunner {
                 patient2.getEmail(), patient3.getEmail());
     }
 
+    /**
+     * How many times to retry ingestion if the ai-service isn't reachable
+     * yet, and how long to wait between attempts. On a single free-tier host
+     * (e.g. Render) the backend and ai-service scale to zero and cold-start
+     * independently, so there's no guarantee ai-service is ready - and
+     * unlike Postgres-backed deployments, an in-memory ("h2" profile)
+     * backend re-runs this seeding on every single boot, so a failed
+     * one-shot attempt here would otherwise leave every patient
+     * permanently unqueryable until the backend happened to restart again.
+     */
+    private static final int INGEST_MAX_ATTEMPTS = 5;
+    private static final long INGEST_RETRY_DELAY_MS = 3000;
+
     private void seedRecord(Patient patient, String title, String type, String text) {
         HealthRecord record = healthRecordRepository.save(new HealthRecord(patient, title, type, text));
+
+        for (int attempt = 1; attempt <= INGEST_MAX_ATTEMPTS; attempt++) {
+            try {
+                aiServiceClient.ingest(patient.getId(), record.getId(), text);
+                return;
+            } catch (Exception e) {
+                if (attempt == INGEST_MAX_ATTEMPTS) {
+                    log.warn("Seed ingestion failed for record {} ({}) after {} attempts. It will not be " +
+                                    "queryable via the assistant until re-ingested - is ai-service up? Error: {}",
+                            record.getId(), title, attempt, e.getMessage());
+                } else {
+                    log.info("Seed ingestion attempt {}/{} failed for record {} ({}) - ai-service may still be " +
+                                    "warming up. Retrying in {}ms. Error: {}",
+                            attempt, INGEST_MAX_ATTEMPTS, record.getId(), title, INGEST_RETRY_DELAY_MS, e.getMessage());
+                    sleepBeforeRetry();
+                }
+            }
+        }
+    }
+
+    private void sleepBeforeRetry() {
         try {
-            aiServiceClient.ingest(patient.getId(), record.getId(), text);
-        } catch (Exception e) {
-            // Best-effort: if ai-service isn't up yet when the backend starts,
-            // the record is still saved but won't be queryable until
-            // re-ingested. Common if docker-compose starts both services at
-            // once and ai-service's model download/load takes longer to warm
-            // up than Postgres+backend startup.
-            log.warn("Seed ingestion failed for record {} ({}). It will not be queryable via the assistant " +
-                    "until re-ingested - is ai-service up? Error: {}", record.getId(), title, e.getMessage());
+            Thread.sleep(INGEST_RETRY_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

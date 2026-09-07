@@ -10,6 +10,11 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-download the embedding model at build time so a cold start (e.g. after
+# Render's free tier spins the service down from inactivity) doesn't also
+# need to fetch it over the network before it can serve /ingest or /query.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
 COPY app ./app
 
 ENV CHROMA_PERSIST_DIR=/data/chroma
