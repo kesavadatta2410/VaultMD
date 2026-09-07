@@ -1,26 +1,40 @@
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.chunking import chunk_text
+from app.config import settings
 from app.embeddings import embed_texts
-from app.llm import generate_answer
+from app.llm import build_chunk_previews, generate_answer
 from app.schemas import IngestRequest, IngestResponse, QueryRequest, QueryResponse
-from app.vectorstore import get_collection, query_collection, upsert_chunks
+from app.vectorstore import chroma_mode, get_collection, query_collection, upsert_chunks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("vaultmd.ai-service")
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="VaultMD AI Service", version="0.1.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "chroma_mode": chroma_mode(),
+        "embedding_model": settings.EMBEDDING_MODEL_NAME,
+        "gemini_configured": settings.GEMINI_API_KEY is not None,
+    }
 
 
 @app.post("/ingest", response_model=IngestResponse)
-def ingest(req: IngestRequest):
+@limiter.limit("60/minute")
+def ingest(req: IngestRequest, request: Request):
     chunks = chunk_text(req.text)
     if not chunks:
         raise HTTPException(status_code=400, detail="No content to ingest after chunking")
@@ -34,7 +48,8 @@ def ingest(req: IngestRequest):
 
 
 @app.post("/query", response_model=QueryResponse)
-def query(req: QueryRequest):
+@limiter.limit("20/minute")
+def query(req: QueryRequest, request: Request):
     # Every lookup is scoped to exactly one patient's collection - see
     # vectorstore.get_collection. There is no parameter or code path here
     # that can search another patient's data.
@@ -47,4 +62,4 @@ def query(req: QueryRequest):
         return QueryResponse(answer="not found in records", sources=[])
 
     answer, sources = generate_answer(req.question, results)
-    return QueryResponse(answer=answer, sources=sources)
+    return QueryResponse(answer=answer, sources=sources, chunk_previews=build_chunk_previews(results))

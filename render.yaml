@@ -1,0 +1,60 @@
+# Render Blueprint — free-tier deployment of the backend + ai-service.
+# In the Render dashboard: New + -> Blueprint -> connect this GitHub repo.
+#
+# The frontend is NOT deployed here — it's a static site hosted for free on
+# a Hugging Face Static Space (Docker/Gradio Spaces require a paid HF PRO
+# plan; only Static Spaces are free). See README.md for that step.
+#
+# Both services below run on Render's free plan, which has no persistent
+# disk, so:
+#  - ai-service uses in-memory Chroma (CHROMA_PERSIST_DIR="")
+#  - backend uses in-memory H2 (SPRING_PROFILES_ACTIVE=h2)
+# Both reset together on every cold start/restart and DataSeeder reseeds all
+# demo data fresh each time, so they never fall out of sync with each other.
+#
+# NOTE: if Render reports that "vaultmd-backend" or "vaultmd-ai-service" is
+# already taken (service subdomains are global), rename the `name:` fields
+# below AND update AI_SERVICE_URL to match before deploying, then update
+# frontend/app.js's API_BASE to the real backend URL Render assigns.
+
+services:
+  - type: web
+    name: vaultmd-ai-service
+    runtime: docker
+    plan: free
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    envVars:
+      - key: CHROMA_PERSIST_DIR
+        value: ""
+      - key: EMBEDDING_MODEL_NAME
+        value: all-MiniLM-L6-v2
+      - key: TOP_K
+        value: "4"
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash-lite
+      # Set manually in the Render dashboard (Environment tab) — get a free
+      # key at https://aistudio.google.com/app/apikey. Without it, /query
+      # falls back to an extractive (verbatim chunk) answer.
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: vaultmd-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: h2
+      - key: AI_SERVICE_URL
+        value: https://vaultmd-ai-service.onrender.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION_MS
+        value: "28800000"
+      - key: EMERGENCY_ACCESS_VALIDITY_HOURS
+        value: "12"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"

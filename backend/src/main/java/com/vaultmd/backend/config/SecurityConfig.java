@@ -58,8 +58,9 @@ public class SecurityConfig {
                                 writeJsonError(response, HttpStatus.FORBIDDEN, "Access denied"))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Public: auth endpoints never need a token
+                        // Public: auth endpoints and the health check never need a token
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/health").permitAll()
                         // Patient-only operations
                         .requestMatchers(HttpMethod.POST, "/records").hasRole("PATIENT")
                         .requestMatchers(HttpMethod.POST, "/consent").hasRole("PATIENT")

@@ -34,9 +34,17 @@ public final class AiServiceModels {
     ) {
     }
 
+    public record ChunkPreview(
+            @JsonProperty("record_id") String recordId,
+            @JsonProperty("snippet") String snippet,
+            @JsonProperty("relevance") double relevance
+    ) {
+    }
+
     public record QueryResponse(
             @JsonProperty("answer") String answer,
-            @JsonProperty("sources") List<String> sources
+            @JsonProperty("sources") List<String> sources,
+            @JsonProperty("chunk_previews") List<ChunkPreview> chunkPreviews
     ) {
     }
 }

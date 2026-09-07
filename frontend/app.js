@@ -1,7 +1,16 @@
-// ASSUMPTION: single-origin-agnostic demo config. Change API_BASE if the
-// backend isn't running on localhost:8080 (e.g. when served via
-// docker-compose, the backend is still published on host port 8080).
-const API_BASE = "http://localhost:8080";
+// The frontend (Hugging Face Static Space) and backend (Render) are on
+// different origins, so this always needs a real base URL — same-origin
+// relative paths only work when something proxies both from one domain,
+// which isn't the case here. Local dev (opening this file directly, or via
+// docker-compose) still targets localhost:8080.
+//
+// If you redeploy the backend under a different Render URL (e.g. because
+// "vaultmd-backend" was already taken — see render.yaml), update this
+// constant to match.
+const DEPLOYED_API_BASE = "https://vaultmd-backend.onrender.com";
+const API_BASE = (location.protocol === "file:" || location.hostname === "localhost")
+    ? "http://localhost:8080"
+    : DEPLOYED_API_BASE;
 
 // ASSUMPTION (documented in README): the JWT is kept in localStorage for
 // demo simplicity. That's fine for a local demo but is an XSS-exposure
@@ -300,6 +309,16 @@ document.getElementById("query-form").addEventListener("submit", async (e) => {
         document.getElementById("query-sources").textContent =
             response.sources.length ? response.sources.join(", ") : "none";
         document.getElementById("query-access-type").textContent = response.accessType;
+
+        const previewList = document.getElementById("query-chunk-previews");
+        previewList.innerHTML = "";
+        (response.chunkPreviews || []).forEach((preview) => {
+            const li = document.createElement("li");
+            const pct = Math.round(preview.relevance * 100);
+            li.textContent = `[record ${preview.recordId}, ${pct}% relevance] ${preview.snippet}`;
+            previewList.appendChild(li);
+        });
+
         resultBox.classList.remove("hidden");
     } catch (err) {
         if (err.status === 403) {

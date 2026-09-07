@@ -1,0 +1,14 @@
+# Activated with SPRING_PROFILES_ACTIVE=h2 — used for single-container free
+# hosting (e.g. Hugging Face Spaces) where there's no persistent disk anyway.
+# An in-memory database means demo data (accounts, consents, audit log) is
+# reseeded fresh from DataSeeder on every container boot, same as the
+# ai-service's in-memory Chroma mode — the two always stay in sync because
+# they reset together.
+spring:
+  datasource:
+    url: jdbc:h2:mem:vaultmd;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect

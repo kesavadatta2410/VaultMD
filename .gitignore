@@ -84,5 +84,7 @@ yarn.lock
 coverage/
 .coverage
 htmlcov/
-*.xml
+# NOTE: previously "*.xml" here, which silently excluded backend/pom.xml
+# from every commit (Maven's own POM file is XML). Scoped narrowly instead.
+**/target/surefire-reports/*.xml
 surefire-reports/

@@ -40,6 +40,8 @@ public class AssistantService {
 
         auditLogService.record(grant, question, sources);
 
-        return new AssistantQueryResponse(aiResponse.answer(), sources, grant.getAccessType());
+        List<AiServiceModels.ChunkPreview> chunkPreviews =
+                aiResponse.chunkPreviews() != null ? aiResponse.chunkPreviews() : List.of();
+        return new AssistantQueryResponse(aiResponse.answer(), sources, grant.getAccessType(), chunkPreviews);
     }
 }

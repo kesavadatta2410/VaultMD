@@ -1,3 +1,13 @@
+---
+title: VaultMD
+emoji: 🔐
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # VaultMD
 
 [![CI](https://github.com/kesavadatta2410/VaultMD/actions/workflows/ci.yml/badge.svg)](https://github.com/kesavadatta2410/VaultMD/actions/workflows/ci.yml)
