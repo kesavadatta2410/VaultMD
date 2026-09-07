@@ -1,0 +1,191 @@
+{
+  "info": {
+    "name": "VaultMD API",
+    "description": "End-to-end flow: signup/login -> upload record -> grant consent -> assistant query -> audit log. Also covers the emergency-access path. Set {{base_url}} to http://localhost:8080.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "patient_token", "value": "" },
+    { "key": "doctor_token", "value": "" },
+    { "key": "patient_id", "value": "" },
+    { "key": "doctor_id", "value": "" },
+    { "key": "consent_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Login as seeded patient1",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"PATIENT\",\n  \"email\": \"patient1@example.com\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": "{{base_url}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const data = pm.response.json();",
+            "pm.collectionVariables.set('patient_token', data.token);",
+            "pm.collectionVariables.set('patient_id', data.userId);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "2. Login as seeded doctor2 (no consent yet)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"DOCTOR\",\n  \"email\": \"doctor2@example.com\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": "{{base_url}}/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const data = pm.response.json();",
+            "pm.collectionVariables.set('doctor_token', data.token);",
+            "pm.collectionVariables.set('doctor_id', data.userId);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "3. Upload a health record (as patient)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{patient_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Iron Panel\",\n  \"type\": \"lab_result\",\n  \"text\": \"Iron panel: ferritin 18 ng/mL (low), suggestive of mild iron deficiency. Recommend oral iron supplementation and recheck in 8 weeks.\"\n}"
+        },
+        "url": "{{base_url}}/records"
+      }
+    },
+    {
+      "name": "4a. Doctor query BEFORE consent (expect 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctor_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": {{patient_id}},\n  \"question\": \"What allergies does this patient have?\"\n}"
+        },
+        "url": "{{base_url}}/assistant/query"
+      }
+    },
+    {
+      "name": "4b. Patient grants consent to doctor2",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{patient_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorId\": {{doctor_id}}\n}"
+        },
+        "url": "{{base_url}}/consent"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "const data = pm.response.json();",
+            "pm.collectionVariables.set('consent_id', data.id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "4c. Doctor query AFTER consent (expect 200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctor_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": {{patient_id}},\n  \"question\": \"What allergies does this patient have?\"\n}"
+        },
+        "url": "{{base_url}}/assistant/query"
+      }
+    },
+    {
+      "name": "5. Patient views audit log",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+        "url": "{{base_url}}/audit-log/{{patient_id}}"
+      }
+    },
+    {
+      "name": "6. Patient revokes consent",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{patient_token}}" }],
+        "url": "{{base_url}}/consent/{{consent_id}}"
+      }
+    },
+    {
+      "name": "7a. Doctor query AFTER revoke (expect 403 again)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctor_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": {{patient_id}},\n  \"question\": \"What allergies does this patient have?\"\n}"
+        },
+        "url": "{{base_url}}/assistant/query"
+      }
+    },
+    {
+      "name": "7b. Doctor logs emergency access instead",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctor_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": {{patient_id}},\n  \"justification\": \"Patient unresponsive in ER, need allergy history urgently.\"\n}"
+        },
+        "url": "{{base_url}}/emergency-access"
+      }
+    },
+    {
+      "name": "7c. Doctor query AFTER emergency access (expect 200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{doctor_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": {{patient_id}},\n  \"question\": \"What allergies does this patient have?\"\n}"
+        },
+        "url": "{{base_url}}/assistant/query"
+      }
+    }
+  ]
+}

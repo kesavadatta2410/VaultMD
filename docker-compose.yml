@@ -1,0 +1,57 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vaultmd
+      POSTGRES_USER: vaultmd
+      POSTGRES_PASSWORD: vaultmd
+    ports:
+      - "5432:5432"
+    volumes:
+      - vaultmd_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaultmd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      CHROMA_PERSIST_DIR: /data/chroma
+      EMBEDDING_MODEL_NAME: all-MiniLM-L6-v2
+      TOP_K: "4"
+      # Set OPENAI_API_KEY to get LLM-generated answers; otherwise /query
+      # falls back to an extractive answer (see ai-service/app/llm.py).
+      # OPENAI_API_KEY: sk-...
+    volumes:
+      - vaultmd_chroma_data:/data/chroma
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: vaultmd
+      DB_USER: vaultmd
+      DB_PASSWORD: vaultmd
+      AI_SERVICE_URL: http://ai-service:8000
+      # DEV ONLY - override with a real random 32+ char secret outside local demo use.
+      JWT_SECRET: dev-only-change-me-32-plus-characters-long-secret
+      JWT_EXPIRATION_MS: "28800000"
+      EMERGENCY_ACCESS_VALIDITY_HOURS: "12"
+      CORS_ALLOWED_ORIGINS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+volumes:
+  vaultmd_pg_data:
+  vaultmd_chroma_data:

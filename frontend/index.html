@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultMD (demo)</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>VaultMD <span class="tag">demo</span></h1>
+        <div id="session-bar" class="hidden">
+            <span id="session-info"></span>
+            <button id="logout-btn">Log out</button>
+        </div>
+    </header>
+
+    <main>
+        <p class="banner">
+            All data on this screen is synthetic demo data. This is a 6-hour interview/demo build -
+            see the README for what was deliberately cut for time.
+        </p>
+        <div id="error-banner" class="error hidden"></div>
+
+        <!-- ===================== AUTH ===================== -->
+        <section id="auth-section" class="card">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="login">Log in</button>
+                <button class="tab-btn" data-tab="signup">Sign up</button>
+            </div>
+
+            <form id="login-form" class="tab-panel">
+                <label>Role
+                    <select name="role" required>
+                        <option value="PATIENT">Patient</option>
+                        <option value="DOCTOR">Doctor</option>
+                    </select>
+                </label>
+                <label>Email <input type="email" name="email" required autocomplete="username"></label>
+                <label>Password <input type="password" name="password" required autocomplete="current-password"></label>
+                <button type="submit">Log in</button>
+                <p class="hint">Seeded demo accounts (see README): patient1@example.com / doctor1@example.com,
+                    password <code>Password123!</code></p>
+            </form>
+
+            <form id="signup-form" class="tab-panel hidden">
+                <label>Role
+                    <select name="role" required>
+                        <option value="PATIENT">Patient</option>
+                        <option value="DOCTOR">Doctor</option>
+                    </select>
+                </label>
+                <label>Full name <input type="text" name="fullName" required></label>
+                <label>Email <input type="email" name="email" required autocomplete="username"></label>
+                <label>Password <input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+                <label id="license-field">Medical license ID (doctors only, fake/demo value)
+                    <input type="text" name="licenseId">
+                </label>
+                <button type="submit">Create account</button>
+            </form>
+        </section>
+
+        <!-- ===================== PATIENT VIEW ===================== -->
+        <section id="patient-section" class="hidden">
+            <div class="grid">
+                <div class="card">
+                    <h2>Upload a health record</h2>
+                    <form id="upload-form">
+                        <label>Title <input type="text" name="title" required></label>
+                        <label>Type
+                            <select name="type">
+                                <option value="lab_result">Lab result</option>
+                                <option value="allergy">Allergy</option>
+                                <option value="note">Note</option>
+                            </select>
+                        </label>
+                        <label>Report text <textarea name="text" rows="4" required></textarea></label>
+                        <button type="submit">Upload</button>
+                    </form>
+                    <ul id="upload-status" class="status-list"></ul>
+                </div>
+
+                <div class="card">
+                    <h2>Grant consent to a doctor</h2>
+                    <form id="consent-form">
+                        <label>Doctor ID <input type="number" name="doctorId" required min="1"></label>
+                        <label>Expires at (optional) <input type="datetime-local" name="expiresAt"></label>
+                        <button type="submit">Grant consent</button>
+                    </form>
+                    <h3>Your consents</h3>
+                    <table id="consent-table">
+                        <thead><tr><th>Doctor</th><th>Status</th><th>Expires</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Audit log - who accessed your records</h2>
+                <button id="refresh-audit-btn">Refresh</button>
+                <table id="audit-table">
+                    <thead><tr><th>Doctor</th><th>Access type</th><th>Question</th><th>Cited records</th><th>When</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===================== DOCTOR VIEW ===================== -->
+        <section id="doctor-section" class="hidden">
+            <div class="grid">
+                <div class="card">
+                    <h2>Ask the assistant about a patient</h2>
+                    <form id="query-form">
+                        <label>Patient ID <input type="number" name="patientId" required min="1"></label>
+                        <label>Question <textarea name="question" rows="3" required></textarea></label>
+                        <button type="submit">Ask</button>
+                    </form>
+                    <div id="query-result" class="hidden">
+                        <h3>Answer <span id="query-access-type" class="badge"></span></h3>
+                        <p id="query-answer"></p>
+                        <p><strong>Sources:</strong> <span id="query-sources"></span></p>
+                    </div>
+                    <p id="query-denied" class="error hidden">
+                        No active consent or recent emergency access for this patient.
+                        Log an emergency access request below, or ask the patient to grant consent.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2>Log emergency access</h2>
+                    <p class="hint">Use this when you need to see a patient's records without prior consent
+                        (e.g. the patient is unresponsive). This is logged and visible to the patient.</p>
+                    <form id="emergency-form">
+                        <label>Patient ID <input type="number" name="patientId" required min="1"></label>
+                        <label>Justification (min. 10 characters)
+                            <textarea name="justification" rows="3" required minlength="10"></textarea>
+                        </label>
+                        <button type="submit">Log emergency access</button>
+                    </form>
+                    <ul id="emergency-status" class="status-list"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
