@@ -3,6 +3,10 @@ uvicorn[standard]==0.29.0
 pydantic==2.7.1
 fastembed==0.7.1
 chromadb==0.4.24
+# chromadb 0.4.24 (2024) uses np.float_/np.int_/np.uint aliases that NumPy
+# 2.0 removed. Pin below 2.0 so pip doesn't resolve a numpy that breaks
+# chromadb's own import (`np.float_` was removed in the NumPy 2.0 release).
+numpy<2.0.0
 python-multipart==0.0.9
 google-genai==1.16.0
 slowapi==0.1.9
