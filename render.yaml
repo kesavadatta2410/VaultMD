@@ -12,10 +12,14 @@
 # Both reset together on every cold start/restart and DataSeeder reseeds all
 # demo data fresh each time, so they never fall out of sync with each other.
 #
-# NOTE: if Render reports that "vaultmd-backend" or "vaultmd-ai-service" is
-# already taken (service subdomains are global), rename the `name:` fields
-# below AND update AI_SERVICE_URL to match before deploying, then update
-# frontend/app.js's API_BASE to the real backend URL Render assigns.
+# NOTE: "vaultmd-backend" was already taken by an unrelated Render service
+# (service subdomains are global), so Render assigned this deployment
+# https://vaultmd-backend-l2u8.onrender.com instead — that's the URL
+# frontend/app.js's DEPLOYED_API_BASE actually points at. If you redeploy
+# this Blueprint fresh, check the real assigned URL on the Render dashboard
+# rather than assuming it matches the `name:` field below, and update
+# frontend/app.js (and CORS_ALLOWED_ORIGINS below, if the frontend origin
+# also changes) to match.
 
 services:
   - type: web

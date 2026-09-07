@@ -7,7 +7,10 @@
 // If you redeploy the backend under a different Render URL (e.g. because
 // "vaultmd-backend" was already taken — see render.yaml), update this
 // constant to match.
-const DEPLOYED_API_BASE = "https://vaultmd-backend.onrender.com";
+//
+// "vaultmd-backend" was in fact already taken by an unrelated Render
+// service, so Render assigned this one a random suffix instead.
+const DEPLOYED_API_BASE = "https://vaultmd-backend-l2u8.onrender.com";
 const API_BASE = (location.protocol === "file:" || location.hostname === "localhost")
     ? "http://localhost:8080"
     : DEPLOYED_API_BASE;
