@@ -31,3 +31,9 @@ class QueryResponse(BaseModel):
     answer: str
     sources: List[str]
     chunk_previews: List[ChunkPreview] = []
+    # True when this patient's collection has never been ingested into (or
+    # lost its data, e.g. an in-memory Chroma restart) - distinct from
+    # "has data, but nothing relevant to this question". Lets the caller
+    # (the backend) tell "truly nothing on file" apart from "out of sync,
+    # worth re-ingesting and retrying" without guessing from the answer text.
+    collection_empty: bool = False

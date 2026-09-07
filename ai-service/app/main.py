@@ -54,12 +54,13 @@ def query(req: QueryRequest, request: Request):
     # vectorstore.get_collection. There is no parameter or code path here
     # that can search another patient's data.
     collection = get_collection(req.patient_id)
+    collection_empty = collection.count() == 0
 
     query_embedding = embed_texts([req.question])[0]
     results = query_collection(collection, query_embedding)
 
     if not results:
-        return QueryResponse(answer="not found in records", sources=[])
+        return QueryResponse(answer="not found in records", sources=[], collection_empty=collection_empty)
 
     answer, sources = generate_answer(req.question, results)
     return QueryResponse(answer=answer, sources=sources, chunk_previews=build_chunk_previews(results))

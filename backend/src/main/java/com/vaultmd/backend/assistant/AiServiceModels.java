@@ -44,7 +44,8 @@ public final class AiServiceModels {
     public record QueryResponse(
             @JsonProperty("answer") String answer,
             @JsonProperty("sources") List<String> sources,
-            @JsonProperty("chunk_previews") List<ChunkPreview> chunkPreviews
+            @JsonProperty("chunk_previews") List<ChunkPreview> chunkPreviews,
+            @JsonProperty("collection_empty") boolean collectionEmpty
     ) {
     }
 }
