@@ -56,5 +56,8 @@ services:
         value: "28800000"
       - key: EMERGENCY_ACCESS_VALIDITY_HOURS
         value: "12"
+      # Wildcard is fine here (auth uses a Bearer token, not cookies), but
+      # since we know the exact frontend origin, scope it for a little
+      # extra safety. Update if the HF Space is renamed/recreated.
       - key: CORS_ALLOWED_ORIGINS
-        value: "*"
+        value: "https://kd5821-vaultmd.static.hf.space"
