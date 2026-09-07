@@ -22,7 +22,8 @@ class Settings(BaseModel):
     # • Render     → set CHROMA_PERSIST_DIR="" to use in-memory mode (free tier)
     CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
 
-    EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+    # fastembed model name (HF-style repo id, not the bare model name).
+    EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "sentence-transformers/all-MiniLM-L6-v2")
     TOP_K: int = int(os.getenv("TOP_K", "4"))
 
     # Gemini: free tier via Google AI Studio — https://aistudio.google.com/app/apikey
