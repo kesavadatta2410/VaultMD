@@ -36,7 +36,7 @@ services:
       - key: TOP_K
         value: "4"
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash-lite
+        value: gemini-3.5-flash-lite
       # Set manually in the Render dashboard (Environment tab) — get a free
       # key at https://aistudio.google.com/app/apikey. Without it, /query
       # falls back to an extractive (verbatim chunk) answer.

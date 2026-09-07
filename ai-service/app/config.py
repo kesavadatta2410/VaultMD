@@ -29,11 +29,12 @@ class Settings(BaseModel):
     # Gemini: free tier via Google AI Studio — https://aistudio.google.com/app/apikey
     # If not set, /query falls back to an extractive (verbatim chunk) answer.
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY") or None
-    # gemini-2.5-flash-lite has the most generous free-tier quota
-    # (1000 requests/day, 15/min) of the current Gemini model lineup —
-    # important since this demo is publicly queryable. Override via env
-    # if you have a paid key and want a stronger model.
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+    # gemini-2.5-flash-lite is closed to new API keys as of this writing -
+    # confirmed live via the actual 404 response: "This model
+    # models/gemini-2.5-flash-lite is no longer available to new users.
+    # Please update your code to use models/gemini-3.5-flash-lite." Override
+    # via env if that changes again or you want a different/paid model.
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "500"))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "50"))

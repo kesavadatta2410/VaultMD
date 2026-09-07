@@ -1,15 +1,23 @@
 import chromadb
+from chromadb.config import Settings as ChromaSettings
 
 from app.config import settings
+
+# anonymized_telemetry=False: chromadb 0.4.24's bundled posthog client is
+# incompatible with the posthog version pip resolves (capture() signature
+# mismatch), which otherwise logs a "Failed to send telemetry event" error
+# on every single collection create/query. Disabling it is also just the
+# right call for a demo that shouldn't be phoning home.
+_chroma_settings = ChromaSettings(anonymized_telemetry=False)
 
 # Support in-memory mode when CHROMA_PERSIST_DIR is empty (e.g. Render free tier).
 # On Render, the DataSeeder re-seeds health records on every startup, so all
 # demo data is available even with an ephemeral store.
 if settings.CHROMA_PERSIST_DIR:
-    _client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR)
+    _client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR, settings=_chroma_settings)
     _chroma_mode = "persistent"
 else:
-    _client = chromadb.Client()   # in-memory
+    _client = chromadb.Client(settings=_chroma_settings)   # in-memory
     _chroma_mode = "in-memory"
 
 
